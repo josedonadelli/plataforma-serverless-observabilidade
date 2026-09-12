@@ -88,8 +88,9 @@ resource "aws_lambda_function" "processor" {
 
   environment {
     variables = {
-      TABLE_NAME = aws_dynamodb_table.logs.name
-      TTL_DAYS   = var.log_ttl_days
+      TABLE_NAME       = aws_dynamodb_table.logs.name
+      TTL_DAYS         = var.log_ttl_days
+      METRIC_NAMESPACE = local.metric_namespace
     }
   }
 }

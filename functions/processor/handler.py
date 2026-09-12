@@ -13,8 +13,11 @@ from log_schema import parse_timestamp, validate_log
 
 TABLE_NAME = os.environ["TABLE_NAME"]
 TTL_DAYS = int(os.environ.get("TTL_DAYS", "30"))
+METRIC_NAMESPACE = os.environ.get("METRIC_NAMESPACE", "LogsPlatform")
+ERROR_METRIC_NAME = "ErrorLogs"
 
 _table = boto3.resource("dynamodb").Table(TABLE_NAME)
+_cloudwatch = boto3.client("cloudwatch")
 
 
 def build_item(log):
@@ -32,8 +35,30 @@ def build_item(log):
     return item
 
 
+def emit_error_metric(error_count):
+    """Publica a contagem de logs ERROR gravados como métrica no CloudWatch.
+
+    Uma falha aqui não deve afetar o resultado do batch: os logs já foram
+    persistidos, então só registramos o erro e seguimos.
+    """
+    try:
+        _cloudwatch.put_metric_data(
+            Namespace=METRIC_NAMESPACE,
+            MetricData=[
+                {
+                    "MetricName": ERROR_METRIC_NAME,
+                    "Value": error_count,
+                    "Unit": "Count",
+                }
+            ],
+        )
+    except Exception as exc:  # métrica é best-effort
+        print(f"falha ao publicar métrica {ERROR_METRIC_NAME}: {exc}")
+
+
 def handler(event, context):
     failures = []
+    error_count = 0
 
     for record in event.get("Records", []):
         message_id = record.get("messageId")
@@ -55,5 +80,12 @@ def handler(event, context):
         except Exception as exc:  # falha de escrita -> reentrega
             print(f"[{message_id}] falha ao gravar no DynamoDB: {exc}")
             failures.append({"itemIdentifier": message_id})
+            continue
+
+        if log["level"] == "ERROR":
+            error_count += 1
+
+    if error_count:
+        emit_error_metric(error_count)
 
     return {"batchItemFailures": failures}

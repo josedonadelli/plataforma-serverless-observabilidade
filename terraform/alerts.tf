@@ -34,3 +34,21 @@ resource "aws_cloudwatch_metric_alarm" "dlq_messages" {
   alarm_actions = [aws_sns_topic.alerts.arn]
   ok_actions    = [aws_sns_topic.alerts.arn]
 }
+
+# Alarme de pico de erros: dispara quando a soma de logs ERROR em 5 min
+# ultrapassa o threshold. Métrica custom emitida pela Lambda processadora.
+resource "aws_cloudwatch_metric_alarm" "error_spike" {
+  alarm_name          = "${local.prefix}-pico-de-erros"
+  alarm_description   = "Muitos logs ERROR em 5 min — possível incidente."
+  namespace           = local.metric_namespace
+  metric_name         = local.error_metric_name
+  statistic           = "Sum"
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = var.error_alarm_threshold
+  period              = 300
+  evaluation_periods  = 1
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.alerts.arn]
+  ok_actions    = [aws_sns_topic.alerts.arn]
+}

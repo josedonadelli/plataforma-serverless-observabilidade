@@ -39,3 +39,9 @@ variable "log_ttl_days" {
   type        = number
   default     = 30
 }
+
+variable "error_alarm_threshold" {
+  description = "Número de logs ERROR em 5 min a partir do qual o alarme dispara."
+  type        = number
+  default     = 10
+}

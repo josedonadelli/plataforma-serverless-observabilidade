@@ -42,6 +42,20 @@ data "aws_iam_policy_document" "processor" {
     actions   = ["dynamodb:PutItem"]
     resources = [aws_dynamodb_table.logs.arn]
   }
+
+  # PutMetricData não suporta ARN de recurso; restringimos pelo namespace.
+  statement {
+    sid       = "PublishErrorMetric"
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "cloudwatch:namespace"
+      values   = [local.metric_namespace]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "processor" {
