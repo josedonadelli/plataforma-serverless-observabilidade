@@ -33,3 +33,9 @@ variable "alert_email" {
   type        = string
   default     = ""
 }
+
+variable "log_ttl_days" {
+  description = "Dias até a expiração automática (TTL) de um log no DynamoDB."
+  type        = number
+  default     = 30
+}

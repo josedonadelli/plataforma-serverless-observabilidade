@@ -6,6 +6,20 @@ locals {
   lambda_runtime = "python3.12"
 }
 
+# --- Layer com o código compartilhado (schema/validação) ---
+data "archive_file" "shared_layer" {
+  type        = "zip"
+  source_dir  = "${local.functions_dir}/layer"
+  output_path = "${path.module}/.build/shared_layer.zip"
+}
+
+resource "aws_lambda_layer_version" "shared" {
+  layer_name          = "${local.prefix}-shared"
+  filename            = data.archive_file.shared_layer.output_path
+  source_code_hash    = data.archive_file.shared_layer.output_base64sha256
+  compatible_runtimes = [local.lambda_runtime]
+}
+
 # --- Empacotamento (zip) de cada função ---
 data "archive_file" "ingestion" {
   type        = "zip"
@@ -68,10 +82,12 @@ resource "aws_lambda_function" "processor" {
   filename         = data.archive_file.processor.output_path
   source_code_hash = data.archive_file.processor.output_base64sha256
   timeout          = var.processor_timeout_seconds
+  layers           = [aws_lambda_layer_version.shared.arn]
 
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.logs.name
+      TTL_DAYS   = var.log_ttl_days
     }
   }
 }
