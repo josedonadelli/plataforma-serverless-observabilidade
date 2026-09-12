@@ -15,3 +15,15 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "processor_timeout_seconds" {
+  description = "Timeout da Lambda processadora. Base para o visibility timeout da fila SQS."
+  type        = number
+  default     = 30
+}
+
+variable "max_receive_count" {
+  description = "Tentativas de processamento antes de a mensagem ir para a DLQ."
+  type        = number
+  default     = 3
+}
