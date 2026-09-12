@@ -1,4 +1,5 @@
 terraform {
+  required_version = ">= 1.5"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -7,7 +8,14 @@ terraform {
   }
 }
 
-
 provider "aws" {
-  region = "sa-east-1" # troque pela região que você usa
+  region = var.region
+
+  default_tags {
+    tags = {
+      Project     = "plataforma-logs-serverless"
+      Environment = var.environment
+      ManagedBy   = "terraform"
+    }
+  }
 }
