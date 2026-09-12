@@ -1,4 +1,24 @@
+# Terraform
 .terraform/
 *.tfstate
-*.tfstate.backup
-.terraform.lock.hcl
+*.tfstate.*
+*.tfvars
+crash.log
+override.tf
+override.tf.json
+# .terraform.lock.hcl é versionado de propósito (trava versões dos providers)
+
+# Empacotamento de Lambdas
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Credenciais / segredos
+.aws/
+*.pem
+*.key
+.env
