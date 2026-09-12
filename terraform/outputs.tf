@@ -41,3 +41,8 @@ output "lambda_function_names" {
     processor = aws_lambda_function.processor.function_name
   }
 }
+
+output "api_invoke_url" {
+  description = "URL base da API. Rotas: POST /logs e GET /logs."
+  value       = aws_api_gateway_stage.logs.invoke_url
+}

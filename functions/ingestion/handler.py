@@ -6,6 +6,9 @@ import json
 def handler(event, context):
     return {
         "statusCode": 202,
-        "headers": {"Content-Type": "application/json"},
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+        },
         "body": json.dumps({"status": "accepted", "placeholder": True}),
     }
