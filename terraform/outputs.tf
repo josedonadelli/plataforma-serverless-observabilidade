@@ -32,3 +32,12 @@ output "sqs_dlq_url" {
   description = "URL da dead-letter queue."
   value       = aws_sqs_queue.logs_dlq.url
 }
+
+output "lambda_function_names" {
+  description = "Nomes das funções Lambda."
+  value = {
+    ingestion = aws_lambda_function.ingestion.function_name
+    query     = aws_lambda_function.query.function_name
+    processor = aws_lambda_function.processor.function_name
+  }
+}
