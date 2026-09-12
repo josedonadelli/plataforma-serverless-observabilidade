@@ -46,3 +46,8 @@ output "api_invoke_url" {
   description = "URL base da API. Rotas: POST /logs e GET /logs."
   value       = aws_api_gateway_stage.logs.invoke_url
 }
+
+output "sns_alerts_topic_arn" {
+  description = "ARN do tópico SNS de alertas."
+  value       = aws_sns_topic.alerts.arn
+}

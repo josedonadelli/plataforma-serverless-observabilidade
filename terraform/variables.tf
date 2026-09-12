@@ -27,3 +27,9 @@ variable "max_receive_count" {
   type        = number
   default     = 3
 }
+
+variable "alert_email" {
+  description = "E-mail que recebe os alertas via SNS. Vazio não cria assinatura."
+  type        = string
+  default     = ""
+}
