@@ -101,6 +101,17 @@ def _logs_endpoint(base_url):
     return base if base.endswith("/logs") else base + "/logs"
 
 
+def _new_stats():
+    return {"sent": 0, "error_logs": 0, "accepted": 0, "statuses": {}}
+
+
+def _record(stats, status):
+    """Contabiliza um envio: 202 conta como aceito; guarda a distribuição."""
+    stats["statuses"][status] = stats["statuses"].get(status, 0) + 1
+    if status == 202:
+        stats["accepted"] += 1
+
+
 def run_stream(url, rng, services, error_rate, rate, duration, count, dry_run):
     """Envia logs em fluxo: `count` mensagens, ou por `duration` s à taxa `rate`."""
     interval = 1.0 / rate if rate > 0 else 0
@@ -108,7 +119,7 @@ def run_stream(url, rng, services, error_rate, rate, duration, count, dry_run):
     deadline = None if total is not None else time.monotonic() + duration
 
     sent = 0
-    stats = {"sent": 0, "error_logs": 0, "accepted": 0}
+    stats = _new_stats()
     while True:
         if total is not None and sent >= total:
             break
@@ -124,11 +135,7 @@ def run_stream(url, rng, services, error_rate, rate, duration, count, dry_run):
             print(json.dumps(log))
             stats["accepted"] += 1
         else:
-            status = send_log(url, log)
-            if status == 202:
-                stats["accepted"] += 1
-            else:
-                print(f"resposta inesperada: HTTP {status} para {log}", file=sys.stderr)
+            _record(stats, send_log(url, log))
 
         sent += 1
         if interval and not (total is not None and sent >= total):
@@ -139,11 +146,9 @@ def run_stream(url, rng, services, error_rate, rate, duration, count, dry_run):
 def run_burst(url, rng, services, error_rate, count, concurrency, dry_run):
     """Envia `count` logs o mais rápido possível usando `concurrency` threads."""
     logs = [build_log(rng, services, error_rate) for _ in range(count)]
-    stats = {
-        "sent": count,
-        "error_logs": sum(1 for lg in logs if lg["level"] == "ERROR"),
-        "accepted": 0,
-    }
+    stats = _new_stats()
+    stats["sent"] = count
+    stats["error_logs"] = sum(1 for lg in logs if lg["level"] == "ERROR")
     if dry_run:
         for lg in logs:
             print(json.dumps(lg))
@@ -153,8 +158,7 @@ def run_burst(url, rng, services, error_rate, count, concurrency, dry_run):
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
         futures = [pool.submit(send_log, url, lg) for lg in logs]
         for fut in as_completed(futures):
-            if fut.result() == 202:
-                stats["accepted"] += 1
+            _record(stats, fut.result())
     return stats
 
 
@@ -219,6 +223,12 @@ def main(argv=None):
         f"\nEnviados: {stats['sent']} | {verbo}: {stats['accepted']} | "
         f"ERROR: {stats['error_logs']}"
     )
+    # Distribuição de status quando houve resposta diferente de 202
+    # (0 = falha de rede). Útil para flagrar throttling/erros sob carga.
+    outros = {s: n for s, n in stats.get("statuses", {}).items() if s != 202}
+    if outros:
+        detalhe = ", ".join(f"HTTP {s}: {n}" for s, n in sorted(outros.items()))
+        print(f"Respostas não-202: {detalhe}", file=sys.stderr)
     return 0
 
 

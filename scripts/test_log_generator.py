@@ -77,12 +77,29 @@ def test_dry_run_nao_envia():
     print("[ok] --dry-run não faz chamadas de rede")
 
 
+def test_status_tally():
+    # burst_mode contabiliza status != 202 na distribuição.
+    original = gen.send_log
+    seq = iter([202, 500, 202, 500, 500])
+    gen.send_log = lambda *a, **k: next(seq)
+    try:
+        stats = gen.run_burst(
+            "u", random.Random(1), gen.DEFAULT_SERVICES, 0.1, count=5, concurrency=2, dry_run=False
+        )
+    finally:
+        gen.send_log = original
+    assert stats["accepted"] == 2, stats
+    assert stats["statuses"][500] == 3, stats
+    print("[ok] run_burst contabiliza status não-202 (2x202, 3x500)")
+
+
 def main():
     test_logs_validos()
     test_error_rate()
     test_endpoint()
     test_spike_flag()
     test_dry_run_nao_envia()
+    test_status_tally()
     print("\nTodos os testes passaram.")
 
 
