@@ -48,6 +48,7 @@ resource "aws_lambda_function" "ingestion" {
   filename         = data.archive_file.ingestion.output_path
   source_code_hash = data.archive_file.ingestion.output_base64sha256
   timeout          = 15
+  layers           = [aws_lambda_layer_version.shared.arn]
 
   environment {
     variables = {
@@ -65,6 +66,7 @@ resource "aws_lambda_function" "query" {
   filename         = data.archive_file.query.output_path
   source_code_hash = data.archive_file.query.output_base64sha256
   timeout          = 15
+  layers           = [aws_lambda_layer_version.shared.arn]
 
   environment {
     variables = {
